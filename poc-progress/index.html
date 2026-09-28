@@ -68,6 +68,21 @@
   .journey p { margin: 0 0 6px; color: var(--muted); font-size: 13px; }
   .journey svg { width: 100%; height: auto; display: block; }
 
+  /* ---------- Challenges ---------- */
+  .ch-head { margin-bottom: 14px; }
+  .ch-head h2 { font-size: 20px; margin: 0 0 2px; letter-spacing: -.01em; }
+  .ch-head p { margin: 0; color: var(--muted); font-size: 13.5px; }
+  .ch-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin-bottom: 48px; }
+  .ch-card {
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px;
+    display: flex; flex-direction: column;
+  }
+  .ch-tag { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #f87171; margin-bottom: 6px; }
+  .ch-tag.solved { color: var(--done); margin-top: 12px; }
+  .ch-card p { font-size: 13.5px; color: #c6d2e6; margin: 0; line-height: 1.5; }
+  .ch-card p strong { color: var(--text); }
+
   /* ---------- Flow ---------- */
   .flow-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 6px; }
   .flow-head h2 { font-size: 20px; margin: 0; letter-spacing: -.01em; }
@@ -251,6 +266,37 @@
         <text x="800" y="240">QLoRA fine-tuned · 13</text>
       </g>
     </svg>
+  </div>
+
+  <div class="ch-head">
+    <h2>Challenges along the way</h2>
+    <p>Each step forward came from hitting a limit, understanding it, and changing approach</p>
+  </div>
+  <div class="ch-grid">
+    <div class="ch-card">
+      <div class="ch-tag">Challenge</div>
+      <p>We first tried CNN-based models (ResNet, EfficientNet) for Stage 1, but screenshots are dominated by text in UI context, which image-only CNNs cannot read - accuracy stalled at 34-41%.</p>
+      <div class="ch-tag solved">What we did</div>
+      <p>Switched to a vision-language model that reads both the layout and the on-screen text. Qwen3-VL-8B reached <strong>67.61%</strong> zero-shot, nearly double the best CNN.</p>
+    </div>
+    <div class="ch-card">
+      <div class="ch-tag">Challenge</div>
+      <p>Public dataset labels are app-level, not screen-level - a location picker inside a weather app is labeled "Weather". Many "errors" turned out to be the model reading the screen correctly.</p>
+      <div class="ch-tag solved">What we did</div>
+      <p>Reviewed misclassified images against the confusion matrix to separate real model errors from label noise, and made label cleaning a first-class workstream.</p>
+    </div>
+    <div class="ch-card">
+      <div class="ch-tag">Challenge</div>
+      <p>Several categories overlap on screen content - Travel vs Maps, Education vs Books &amp; Reference, Health &amp; Fitness vs Medical - and no model can separate what is not separable.</p>
+      <div class="ch-tag solved">What we did</div>
+      <p>Merged the overlapping pairs based on confusion evidence, going from 16 to 13 classes and lifting zero-shot accuracy to <strong>72.36%</strong>.</p>
+    </div>
+    <div class="ch-card">
+      <div class="ch-tag">Challenge</div>
+      <p>Limited local GPU memory constrained training - fine-tuning needed 4-bit quantization and reduced image resolution, and 2 epochs took ~1.5 days.</p>
+      <div class="ch-tag solved">What we did</div>
+      <p>Used QLoRA to fine-tune within those limits and still gained <strong>+9.92 pp</strong> to 82.28%. Higher resolution on a larger GPU is known remaining headroom.</p>
+    </div>
   </div>
 
   <div class="flow-head">
