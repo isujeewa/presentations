@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Screenshot Analysis POC - Progress</title>
+</head>
+<body>
+<style>
+  :root {
+    --bg: #0b1120;
+    --panel: #141d31;
+    --panel-2: #1a2540;
+    --line: #24304d;
+    --text: #e6ecf7;
+    --muted: #93a1bd;
+    --accent: #6d8dff;
+    --accent-2: #2dd4bf;
+    --done: #34d399;
+    --current: #fbbf24;
+    --next: #7c8db0;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1100px 500px at 85% -10%, rgba(109,141,255,.16), transparent 60%),
+      radial-gradient(900px 420px at -10% 25%, rgba(45,212,191,.10), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 48px 24px 80px; }
+
+  /* ---------- Hero ---------- */
+  .kicker {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent-2); font-weight: 700;
+  }
+  .kicker::before { content: ""; width: 22px; height: 2px; background: var(--accent-2); border-radius: 2px; }
+  h1 { font-size: clamp(28px, 4.4vw, 42px); line-height: 1.12; margin: 12px 0 10px; letter-spacing: -.02em; }
+  h1 .grad {
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub { color: var(--muted); max-width: 640px; margin: 0 0 26px; font-size: 15.5px; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 44px; }
+  .stat {
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px;
+  }
+  .stat .num { font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
+  .stat .num.good { color: var(--done); }
+  .stat .num.accent { color: var(--accent); }
+  .stat .lbl { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+
+  /* ---------- Accuracy journey ---------- */
+  .journey {
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--line); border-radius: 16px;
+    padding: 20px 22px 8px; margin-bottom: 48px;
+  }
+  .journey h2 { margin: 0 0 2px; font-size: 16px; }
+  .journey p { margin: 0 0 6px; color: var(--muted); font-size: 13px; }
+  .journey svg { width: 100%; height: auto; display: block; }
+
+  /* ---------- Flow ---------- */
+  .flow-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 6px; }
+  .flow-head h2 { font-size: 20px; margin: 0; letter-spacing: -.01em; }
+  .hint { color: var(--muted); font-size: 13px; }
+  .toggle-all {
+    background: none; border: 1px solid var(--line); color: var(--muted);
+    border-radius: 999px; padding: 6px 14px; font-size: 12.5px; cursor: pointer;
+    transition: all .18s ease;
+  }
+  .toggle-all:hover { color: var(--text); border-color: var(--accent); }
+
+  .phase-label {
+    margin: 30px 0 14px 2px;
+    font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--muted); font-weight: 700;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .phase-label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+  .flow { position: relative; padding-left: 44px; }
+  .flow::before {
+    content: ""; position: absolute; left: 15px; top: 8px; bottom: 8px; width: 2px;
+    background: linear-gradient(180deg, var(--done) 0%, var(--done) 58%, var(--current) 72%, var(--line) 88%);
+    border-radius: 2px; opacity: .55;
+  }
+
+  .node { position: relative; margin-bottom: 14px; }
+  .node .dot {
+    position: absolute; left: -44px; top: 18px;
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 800;
+    background: var(--panel); border: 2px solid var(--line); color: var(--muted);
+    z-index: 1;
+  }
+  .node.done .dot { border-color: var(--done); color: var(--done); }
+  .node.current .dot { border-color: var(--current); color: var(--current); box-shadow: 0 0 0 5px rgba(251,191,36,.12); }
+  .node.next .dot { border-style: dashed; }
+
+  .card {
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
+    transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+  }
+  .card:hover { border-color: #34456e; transform: translateY(-1px); box-shadow: 0 10px 26px rgba(3,8,20,.45); }
+  .node.current .card { border-color: rgba(251,191,36,.45); }
+
+  .card-head {
+    width: 100%; display: flex; align-items: center; gap: 14px;
+    padding: 16px 18px; background: none; border: none; color: inherit;
+    font: inherit; text-align: left; cursor: pointer;
+  }
+  .card-head:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 16px; }
+  .card-title { flex: 1; min-width: 0; }
+  .card-title .t { font-weight: 700; font-size: 15.5px; letter-spacing: -.01em; }
+  .card-title .s { font-size: 13px; color: var(--muted); margin-top: 1px; }
+
+  .badge {
+    flex: none; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 999px; border: 1px solid;
+  }
+  .badge.done { color: var(--done); border-color: rgba(52,211,153,.4); background: rgba(52,211,153,.08); }
+  .badge.current { color: var(--current); border-color: rgba(251,191,36,.4); background: rgba(251,191,36,.08); }
+  .badge.next { color: var(--next); border-color: rgba(124,141,176,.35); background: rgba(124,141,176,.08); }
+
+  .metric-chip {
+    flex: none; font-size: 13px; font-weight: 800; color: var(--accent);
+    background: rgba(109,141,255,.1); border: 1px solid rgba(109,141,255,.3);
+    padding: 4px 10px; border-radius: 8px; white-space: nowrap;
+  }
+
+  .chev { flex: none; width: 22px; height: 22px; color: var(--muted); transition: transform .28s ease; }
+  .node.open .chev { transform: rotate(180deg); }
+
+  .card-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .32s ease; }
+  .node.open .card-body { grid-template-rows: 1fr; }
+  .card-body > .inner { overflow: hidden; }
+  .inner-pad { padding: 2px 18px 18px; border-top: 1px solid var(--line); }
+  .inner-pad h4 { margin: 16px 0 8px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-2); }
+  .inner-pad p { margin: 8px 0; font-size: 14px; color: #c6d2e6; }
+  .inner-pad ul { margin: 8px 0; padding-left: 20px; font-size: 14px; color: #c6d2e6; }
+  .inner-pad li { margin: 5px 0; }
+  .inner-pad strong { color: var(--text); }
+  .callout {
+    margin-top: 14px; padding: 12px 14px; border-radius: 10px; font-size: 13.5px;
+    background: rgba(251,191,36,.07); border: 1px solid rgba(251,191,36,.25); color: #f2d9a0;
+  }
+  .callout.good { background: rgba(52,211,153,.07); border-color: rgba(52,211,153,.25); color: #b7ecd7; }
+
+  /* bars */
+  .bars { margin-top: 10px; display: grid; gap: 7px; }
+  .bar-row { display: grid; grid-template-columns: 170px 1fr 56px; align-items: center; gap: 10px; font-size: 12.5px; }
+  .bar-row .name { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-row .val { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .track { height: 8px; background: #0e1628; border-radius: 999px; overflow: hidden; }
+  .fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); width: 0; transition: width .8s cubic-bezier(.2,.7,.2,1); }
+  .fill.warn { background: linear-gradient(90deg, #f87171, #fbbf24); }
+  .bar-row.win .name, .bar-row.win .val { color: var(--done); }
+
+  table.mini { border-collapse: collapse; width: 100%; margin-top: 8px; font-size: 13px; }
+  table.mini th, table.mini td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+  table.mini th { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; }
+  table.mini td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+
+  .scroll-x { overflow-x: auto; }
+
+  /* category chips */
+  .cats { display: grid; grid-template-columns: 1fr 34px 1fr; gap: 10px; align-items: center; margin-top: 10px; }
+  .cat-col { background: #0e1628; border: 1px solid var(--line); border-radius: 12px; padding: 12px 12px 14px; align-self: stretch; }
+  .cat-col h5 { margin: 0 0 10px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .cat-col h5 .count { color: var(--accent); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 12px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: #c6d2e6; background: rgba(255,255,255,.02); white-space: nowrap; }
+  .chip.src { border-color: rgba(251,191,36,.5); color: #f2d9a0; background: rgba(251,191,36,.06); }
+  .chip.merged { border-color: rgba(52,211,153,.55); color: #b7ecd7; background: rgba(52,211,153,.08); font-weight: 700; }
+  .cat-arrow { color: var(--accent); display: flex; justify-content: center; }
+  .cat-arrow svg { width: 26px; height: 26px; }
+  .legend { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+  .legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin: 0 5px 0 2px; vertical-align: -1px; }
+  @media (max-width: 620px) {
+    .cats { grid-template-columns: 1fr; }
+    .cat-arrow svg { transform: rotate(90deg); }
+  }
+
+  footer { margin-top: 46px; color: var(--muted); font-size: 12.5px; text-align: center; }
+
+  @media (max-width: 620px) {
+    .bar-row { grid-template-columns: 110px 1fr 50px; }
+    .metric-chip { display: none; }
+  }
+</style>
+
+<div class="wrap">
+  <div class="kicker">AI Screenshot Analysis · POC</div>
+  <h1>From plan to <span class="grad">82.28% accuracy</span><br>in three iterations</h1>
+  <p class="sub">Two-step POC: classify a screenshot's activity category (Stage 1), then assess the visible behavior against agreed rules (Stage 2). Click any milestone to expand the detail behind it.</p>
+
+  <div class="stats">
+    <div class="stat"><div class="num good">82.28%</div><div class="lbl">Stage 1 accuracy, fine-tuned Qwen3-VL-8B</div></div>
+    <div class="stat"><div class="num accent">+9.92 pp</div><div class="lbl">Gain from QLoRA fine-tuning (2 epochs)</div></div>
+    <div class="stat"><div class="num">13</div><div class="lbl">Activity classes (merged from 16)</div></div>
+    <div class="stat"><div class="num">2,337</div><div class="lbl">Test screenshots evaluated</div></div>
+  </div>
+
+  <div class="journey">
+    <h2>Accuracy journey - Stage 1</h2>
+    <p>Each iteration came from a specific, evidence-driven change</p>
+    <svg viewBox="0 0 900 250" role="img" aria-label="Accuracy progression: 67.61 to 72.36 to 82.28 percent">
+      <defs>
+        <linearGradient id="lg" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#6d8dff"/><stop offset="1" stop-color="#2dd4bf"/>
+        </linearGradient>
+        <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#2dd4bf" stop-opacity=".25"/><stop offset="1" stop-color="#2dd4bf" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <!-- gridlines 60/70/80/90 : y = 230 - (v-55)*4.4 -->
+      <g stroke="#24304d" stroke-dasharray="3 5">
+        <line x1="60" y1="208" x2="880" y2="208"/><line x1="60" y1="164" x2="880" y2="164"/>
+        <line x1="60" y1="120" x2="880" y2="120"/><line x1="60" y1="76" x2="880" y2="76"/>
+      </g>
+      <g fill="#93a1bd" font-size="12">
+        <text x="52" y="212" text-anchor="end">60</text><text x="52" y="168" text-anchor="end">70</text>
+        <text x="52" y="124" text-anchor="end">80</text><text x="52" y="80" text-anchor="end">90</text>
+      </g>
+      <!-- points: x 140/470/800 ; acc 67.61->174.5, 72.36->153.6, 82.28->110 -->
+      <path d="M140,174.5 L470,153.6 L800,110 L800,230 L140,230 Z" fill="url(#area)"/>
+      <path d="M140,174.5 L470,153.6 L800,110" fill="none" stroke="url(#lg)" stroke-width="3.5" stroke-linecap="round"/>
+      <g>
+        <circle cx="140" cy="174.5" r="7" fill="#0b1120" stroke="#6d8dff" stroke-width="3"/>
+        <circle cx="470" cy="153.6" r="7" fill="#0b1120" stroke="#8b9dfd" stroke-width="3"/>
+        <circle cx="800" cy="110" r="9" fill="#0b1120" stroke="#2dd4bf" stroke-width="3.5"/>
+      </g>
+      <g font-size="15" font-weight="800" fill="#e6ecf7" text-anchor="middle">
+        <text x="140" y="152">67.61%</text><text x="470" y="131">72.36%</text>
+        <text x="800" y="86" fill="#2dd4bf" font-size="17">82.28%</text>
+      </g>
+      <g font-size="12" fill="#93a1bd" text-anchor="middle">
+        <text x="140" y="240">Zero-shot · 16 classes</text>
+        <text x="470" y="240">Zero-shot · merged to 13</text>
+        <text x="800" y="240">QLoRA fine-tuned · 13</text>
+      </g>
+    </svg>
+  </div>
+
+  <div class="flow-head">
+    <h2>Milestone flow</h2>
+    <div style="display:flex; align-items:center; gap:14px;">
+      <span class="hint">Click a box to expand</span>
+      <button class="toggle-all" id="toggleAll">Expand all</button>
+    </div>
+  </div>
+
+  <!-- ============ PHASE: FOUNDATION ============ -->
+  <div class="phase-label">Phase 1 · Foundation</div>
+  <div class="flow">
+
+    <div class="node done">
+      <div class="dot">1</div>
+      <div class="card">
+        <button class="card-head" aria-expanded="false">
+          <div class="card-title">
+            <div class="t">POC plan agreed</div>
+            <div class="s">Two-step architecture and scope agreed</div>
+          </div>
+          <span class="badge done">Complete</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="card-body"><div class="inner"><div class="inner-pad">
+          <h4>The design</h4>
+          <ul>
+            <li><strong>Stage 1</strong> - classify each screenshot into an activity category.</li>
+            <li><strong>Stage 2</strong> - a vision-language model reads the image plus the Stage 1 category and applies agreed rules to output Positive, Negative, Neutral, Risk-related or Uncertain, with supporting evidence.</li>
+            <li>Later phase: AWS GPU hosting, authenticated inference API, upload/results frontend.</li>
+          </ul>
+        </div></div></div>
+      </div>
+    </div>
+
+    <div class="node done">
+      <div class="dot">2</div>
+      <div class="card">
+        <button class="card-head" aria-expanded="false">
+          <div class="card-title">
+            <div class="t">Categories defined from RICO</div>
+            <div class="s">10 initial classes, extensible to 20; behaviors drafted for Stage 2</div>
+          </div>
+          <span class="badge done">Complete</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="card-body"><div class="inner"><div class="inner-pad">
+          <h4>Stage 1 categories</h4>
+          <p>Communication, Social, Shopping, Education, Entertainment, Music &amp; Audio, News &amp; Magazines, Finance, Health &amp; Fitness, Travel &amp; Local, plus extensions (Books &amp; Reference, Maps &amp; Navigation, Food &amp; Drink, Sports, Weather, Medical, Video Players &amp; Editors, Dating, Streaming).</p>
+          <h4>Stage 2 behaviors (draft)</h4>
+          <p>Browsing · Messaging · Reading · Viewing media · Entering or editing content.</p>
+          <div class="callout">Known caveat from day one: RICO labels are app-store categories, so every screenshot inherits its app's label regardless of what is actually on screen. This shaped everything that followed.</div>
+        </div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PHASE: STAGE 1 ============ -->
+  <div class="phase-label">Phase 2 · Stage 1 model selection &amp; training</div>
+  <div class="flow">
+
+    <div class="node done">
+      <div class="dot">3</div>
+      <div class="card">
+        <button class="card-head" aria-expanded="false">
+          <div class="card-title">
+            <div class="t">Model benchmark - Qwen3-VL-8B wins</div>
+            <div class="s">5 models compared on 2,337 test screenshots, 16 classes</div>
+          </div>
+          <span class="metric-chip">67.61%</span>
+          <span class="badge done">Complete</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="card-body"><div class="inner"><div class="inner-pad">
+          <h4>Accuracy comparison</h4>
+          <div class="bars">
+            <div class="bar-row win"><span class="name">Qwen3-VL-8B</span><div class="track"><div class="fill" data-w="67.61"></div></div><span class="val">67.61%</span></div>
+            <div class="bar-row"><span class="name">SigLIP2</span><div class="track"><div class="fill" data-w="53.18"></div></div><span class="val">53.18%</span></div>
+            <div class="bar-row"><span class="name">ResNet-101</span><div class="track"><div class="fill" data-w="41.49"></div></div><span class="val">41.49%</span></div>
+            <div class="bar-row"><span class="name">EfficientNet-B3</span><div class="track"><div class="fill" data-w="34.53"></div></div><span class="val">34.53%</span></div>
+            <div class="bar-row"><span class="name">CLIP</span><div class="track"><div class="fill" data-w="31.80"></div></div><span class="val">31.80%</span></div>
+          </div>
+          <h4>Setup</h4>
+          <p>4-bit NF4 quantization, FP16 compute, batch size 1 on a local GPU (~1 image/sec). Strongest classes: Maps &amp; Navigation and Video Players &amp; Editors (86.2%), Books &amp; Reference (85.6%). Weakest: Travel &amp; Local (43.9%), Education (46.3%).</p>
+          <div class="callout good">Decision: use Qwen3-VL-8B as the Stage 1 base model, originally planned only for Stage 2. This opens the option of one model handling both stages in a single call.</div>
+        </div></div></div>
+      </div>
+    </div>
+
+    <div class="node done">
+      <div class="dot">4</div>
+      <div class="card">
+        <button class="card-head" aria-expanded="false">
+          <div class="card-title">
+            <div class="t">Error &amp; label-noise analysis</div>
+            <div class="s">Confusion matrix review + visual inspection of misclassified images</div>
+          </div>
+          <span class="badge done">Complete</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="card-body"><div class="inner"><div class="inner-pad">
+          <h4>What the confusion matrix showed</h4>
+          <div class="scroll-x"><table class="mini">
+            <tr><th>Expected → predicted</th><th style="text-align:right">Count</th></tr>
+            <tr><td>Travel &amp; Local → Maps &amp; Navigation</td><td class="num">66</td></tr>
+            <tr><td>Weather → Maps &amp; Navigation</td><td class="num">48</td></tr>
+            <tr><td>Education → Books &amp; Reference</td><td class="num">42</td></tr>
+            <tr><td>Health &amp; Fitness → Medical</td><td class="num">20</td></tr>
+            <tr><td>Food &amp; Drink → Shopping</td><td class="num">16</td></tr>
+          </table></div>
+          <h4>What the images showed</h4>
+          <ul>
+            <li>A "Travel &amp; Local" image was literally a Google Maps navigation screen - <strong>the model was right, the label was wrong</strong>.</li>
+            <li>An "Education" image was a dictionary app menu; a "Weather" image was a bare location picker.</li>
+            <li>45 answers were unparsed model output; excluding them, accuracy was already <strong>68.94%</strong>.</li>
+            <li>Off-list answers like "Login", "Feedback", "Alarm clock" revealed generic screens that match no category.</li>
+          </ul>
+          <div class="callout good">Conclusion: the biggest confusions were adjacent-category pairs plus app-level label noise, so merging those categories became the next step.</div>
+        </div></div></div>
+      </div>
+    </div>
+
+    <div class="node done">
+      <div class="dot">5</div>
+      <div class="card">
+        <button class="card-head" aria-expanded="false">
+          <div class="card-title">
+            <div class="t">Category merge: 16 → 13 classes</div>
+            <div class="s">Adjacent pairs merged based on the confusion evidence</div>
+          </div>
+          <span class="metric-chip">72.36%</span>
+          <span class="badge done">Complete</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="card-body"><div class="inner"><div class="inner-pad">
+          <h4>Initial categories vs latest classes</h4>
+          <div class="cats">
+            <div class="cat-col">
+              <h5>Initially tried · <span class="count">16</span></h5>
+              <div class="chips">
+                <span class="chip">Social</span>
+                <span class="chip">Shopping</span>
+                <span class="chip src">Education</span>
+                <span class="chip src">Books &amp; Reference</span>
+                <span class="chip src">Health &amp; Fitness</span>
+                <span class="chip src">Medical</span>
+                <span class="chip src">Travel &amp; Local</span>
+                <span class="chip src">Maps &amp; Navigation</span>
+                <span class="chip">Streaming</span>
+                <span class="chip">News &amp; Magazines</span>
+                <span class="chip">Finance</span>
+                <span class="chip">Food &amp; Drink</span>
+                <span class="chip">Sports</span>
+                <span class="chip">Weather</span>
+                <span class="chip">Video Players &amp; Editors</span>
+                <span class="chip">Dating</span>
+              </div>
+            </div>
+            <div class="cat-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h14M13 6l6 6-6 6"/></svg>
+            </div>
+            <div class="cat-col">
+              <h5>Latest · <span class="count">13</span></h5>
+              <div class="chips">
+                <span class="chip">Social</span>
+                <span class="chip">Shopping</span>
+                <span class="chip merged">Education</span>
+                <span class="chip merged">Medical</span>
+                <span class="chip merged">Travel &amp; Local</span>
+                <span class="chip">Streaming</span>
+                <span class="chip">News &amp; Magazines</span>
+                <span class="chip">Finance</span>
+                <span class="chip">Food &amp; Drink</span>
+                <span class="chip">Sports</span>
+                <span class="chip">Weather</span>
+                <span class="chip">Video Players &amp; Editors</span>
+                <span class="chip">Dating</span>
+              </div>
+            </div>
+          </div>
+          <p class="legend"><span class="sw" style="background:rgba(251,191,36,.5)"></span>Merged pairs (Education + Books &amp; Reference, Health &amp; Fitness + Medical, Travel &amp; Local + Maps &amp; Navigation) became <span class="sw" style="background:rgba(52,211,153,.55)"></span>single combined classes.</p>
+          <p>Zero-shot accuracy on the merged 13 classes rose to <strong>72.36%</strong>, consistent with reclaiming the ~128 errors that sat in the merged confusion cells.</p>
+        </div></div></div>
+      </div>
+    </div>
+
+    <div class="node done">
+      <div class="dot">6</div>
+      <div class="card">
+        <button class="card-head" aria-expanded="false">
+          <div class="card-title">
+            <div class="t">QLoRA fine-tuning of Qwen3-VL-8B</div>
+            <div class="s">2 epochs, ~1.5 days on a local GPU, reduced image resolution</div>
+          </div>
+          <span class="metric-chip">82.28%</span>
+          <span class="badge done">Complete</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="card-body"><div class="inner"><div class="inner-pad">
+          <h4>Result: 72.36% → 82.28% (+9.92 pp)</h4>
+          <div class="bars">
+            <div class="bar-row"><span class="name">Weather</span><div class="track"><div class="fill" data-w="93.78"></div></div><span class="val">93.78%</span></div>
+            <div class="bar-row"><span class="name">Video Players &amp; Editors</span><div class="track"><div class="fill" data-w="89.66"></div></div><span class="val">89.66%</span></div>
+            <div class="bar-row"><span class="name">Sports</span><div class="track"><div class="fill" data-w="88.02"></div></div><span class="val">88.02%</span></div>
+            <div class="bar-row"><span class="name">Education</span><div class="track"><div class="fill" data-w="87.42"></div></div><span class="val">87.42%</span></div>
+            <div class="bar-row"><span class="name">Travel &amp; Local</span><div class="track"><div class="fill" data-w="84.16"></div></div><span class="val">84.16%</span></div>
+            <div class="bar-row"><span class="name">Medical</span><div class="track"><div class="fill" data-w="83.56"></div></div><span class="val">83.56%</span></div>
+            <div class="bar-row"><span class="name">Shopping</span><div class="track"><div class="fill" data-w="81.44"></div></div><span class="val">81.44%</span></div>
+            <div class="bar-row"><span class="name">Dating</span><div class="track"><div class="fill" data-w="80.00"></div></div><span class="val">80.00%</span></div>
+            <div class="bar-row"><span class="name">Food &amp; Drink</span><div class="track"><div class="fill" data-w="79.77"></div></div><span class="val">79.77%</span></div>
+            <div class="bar-row"><span class="name">Social</span><div class="track"><div class="fill" data-w="74.81"></div></div><span class="val">74.81%</span></div>
+            <div class="bar-row"><span class="name">Finance</span><div class="track"><div class="fill" data-w="72.78"></div></div><span class="val">72.78%</span></div>
+            <div class="bar-row"><span class="name">News &amp; Magazines</span><div class="track"><div class="fill" data-w="67.23"></div></div><span class="val">67.23%</span></div>
+            <div class="bar-row"><span class="name">Streaming</span><div class="track"><div class="fill warn" data-w="45.00"></div></div><span class="val">45.00%</span></div>
+          </div>
+          <div class="callout">Streaming (45%) overlaps heavily with Video Players &amp; Editors and Social - it is a definition problem, a candidate for a fourth merge or a crisp content-level rule.</div>
+        </div></div></div>
+      </div>
+    </div>
+
+    <div class="node current">
+      <div class="dot">7</div>
+      <div class="card">
+        <button class="card-head" aria-expanded="false">
+          <div class="card-title">
+            <div class="t">Validation &amp; data quality round</div>
+            <div class="s">Making sure 82.28% is real, then pushing it higher</div>
+          </div>
+          <span class="badge current">In progress</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="card-body"><div class="inner"><div class="inner-pad">
+          <h4>Verify first</h4>
+          <ul>
+            <li><strong>Confirm the train/test split is grouped by app.</strong> If the same app appears in both, the model can memorize app identity and the score is inflated.</li>
+            <li><strong>Clean labels before more training.</strong> Fine-tuning on noisy app-level labels bakes the noise in; review the images where the base model disagrees with the folder label.</li>
+          </ul>
+          <h4>Then improve</h4>
+          <ul>
+            <li>Increase input image resolution - screenshots are text-dense, and resolution is likely a bigger lever than a larger model.</li>
+            <li>Balance training data across classes; add examples for weak classes.</li>
+            <li>Resolve the Streaming definition; add an "Other / generic screen" class for logins, settings and feedback forms.</li>
+            <li>Larger GPU to unlock higher resolution and bigger model variants.</li>
+          </ul>
+        </div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PHASE: NEXT ============ -->
+  <div class="phase-label">Phase 3 · Ahead</div>
+  <div class="flow">
+
+    <div class="node next">
+      <div class="dot">8</div>
+      <div class="card">
+        <button class="card-head" aria-expanded="false">
+          <div class="card-title">
+            <div class="t">Stage 2: behavior &amp; context assessment</div>
+            <div class="s">Qwen applies agreed rules → Positive / Negative / Neutral / Risk / Uncertain</div>
+          </div>
+          <span class="badge next">Upcoming</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="card-body"><div class="inner"><div class="inner-pad">
+          <ul>
+            <li>Agree the behavior definitions and assessment rules (e.g. educational work → Positive; threatening messages → Negative).</li>
+            <li>Build a 200-300 screenshot hand-labeled evaluation set: filename, category, behavior, evidence, expected assessment.</li>
+            <li>Split 60% prompt development / 40% held-out final evaluation, grouped by scenario.</li>
+            <li>Pretrained Qwen with prompt engineering first; fine-tuning only if needed.</li>
+            <li>Include hard cases: quoted threats, ambiguous content, low-text screenshots, to measure false positives and correct "Uncertain" outputs.</li>
+          </ul>
+        </div></div></div>
+      </div>
+    </div>
+
+    <div class="node next">
+      <div class="dot">9</div>
+      <div class="card">
+        <button class="card-head" aria-expanded="false">
+          <div class="card-title">
+            <div class="t">AWS hosting, API &amp; POC frontend</div>
+            <div class="s">Deploy models on GPU, authenticated inference API, upload &amp; results UI</div>
+          </div>
+          <span class="badge next">Upcoming</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="card-body"><div class="inner"><div class="inner-pad">
+          <ul>
+            <li>Package and deploy the fine-tuned Qwen model with GPU resources on AWS.</li>
+            <li>Authenticated inference API; local benchmark of ~1 image/sec (4-bit, batch 1) sets the sizing baseline.</li>
+            <li>Frontend: screenshot upload, preview, processing status, results view.</li>
+            <li>End-to-end integration test and deployment documentation.</li>
+          </ul>
+        </div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Screenshot Analysis POC · progress as of 28 Sep 2026 · Stage 1 classification on track, Stage 2 assessment next</footer>
+</div>
+
+<script>
+  const nodes = document.querySelectorAll('.node');
+  document.querySelectorAll('.card-head').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const node = btn.closest('.node');
+      const open = node.classList.toggle('open');
+      btn.setAttribute('aria-expanded', open);
+      if (open) animateBars(node);
+    });
+  });
+  const toggleAll = document.getElementById('toggleAll');
+  toggleAll.addEventListener('click', () => {
+    const anyClosed = [...nodes].some(n => !n.classList.contains('open'));
+    nodes.forEach(n => {
+      n.classList.toggle('open', anyClosed);
+      n.querySelector('.card-head').setAttribute('aria-expanded', anyClosed);
+      if (anyClosed) animateBars(n);
+    });
+    toggleAll.textContent = anyClosed ? 'Collapse all' : 'Expand all';
+  });
+  function animateBars(scope) {
+    scope.querySelectorAll('.fill').forEach(f => {
+      requestAnimationFrame(() => requestAnimationFrame(() => { f.style.width = f.dataset.w + '%'; }));
+    });
+  }
+</script>
+</body>
+</html>
