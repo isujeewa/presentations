@@ -217,14 +217,16 @@
 
 <div class="wrap">
   <div class="kicker">IPPC · AI Screenshot Analysis POC</div>
-  <h1>From plan to <span class="grad">82.28% accuracy</span><br>in three iterations</h1>
-  <p class="sub">Two-step POC: classify a screenshot's activity category (Stage 1), then assess the visible behavior against agreed rules (Stage 2). Click any milestone to expand the detail behind it.</p>
+  <h1>From plan to <span class="grad">82.28% accuracy</span><br>to a live service on AWS</h1>
+  <p class="sub">Two-step POC: classify a screenshot's activity category (Stage 1), then assess the visible behavior against agreed rules (Stage 2). Stage 1 is fine-tuned and live on an AWS GPU behind a hosted demo UI, and Stage 2 behavior classification has its first results. Click any milestone to expand the detail behind it.</p>
 
   <div class="stats">
     <div class="stat"><div class="num good">82.28%</div><div class="lbl">Stage 1 accuracy, fine-tuned Qwen3-VL-8B</div></div>
     <div class="stat"><div class="num accent">+9.92 pp</div><div class="lbl">Gain from QLoRA fine-tuning (2 epochs)</div></div>
     <div class="stat"><div class="num">13</div><div class="lbl">Activity classes (merged from 16)</div></div>
     <div class="stat"><div class="num">2,337</div><div class="lbl">Test screenshots evaluated</div></div>
+    <div class="stat"><div class="num accent">1.7–2.2 s</div><div class="lbl">Per screenshot, both stages, on AWS GPU</div></div>
+    <div class="stat"><div class="num good">89.78%</div><div class="lbl">Stage 2 behavior accuracy, zero-shot, 920 screenshots</div></div>
   </div>
 
   <div class="journey">
@@ -297,6 +299,12 @@
       <div class="ch-tag solved">What we did</div>
       <p>We used a smart, memory-saving technique (QLoRA) to customize the AI model using limited computer power. Even with those hardware limits, we improved the model's accuracy score by <strong>9.92 percentage points</strong>, boosting it up to <strong>82.28%</strong>.</p>
       <p style="margin-top:8px">We know the score can go even higher if we train it on sharper images (higher resolution) using a more powerful graphics card (larger GPU).</p>
+    </div>
+    <div class="ch-card">
+      <div class="ch-tag">Challenge</div>
+      <p>A GPU model left running in the cloud costs hundreds of dollars a month even when nobody is using it - far too heavy for a POC budget.</p>
+      <div class="ch-tag solved">What we did</div>
+      <p>Right-sized to a cheaper T4 GPU after first proving the model runs fast enough on it, and made the service <strong>scale to zero</strong>: a watchdog powers it off automatically after every session. Idle cost is now roughly <strong>$3/month</strong>, and a full demo session costs well under a dollar.</p>
     </div>
   </div>
 
@@ -571,12 +579,117 @@
     </div>
   </div>
 
-  <!-- ============ PHASE: NEXT ============ -->
-  <div class="phase-label">Phase 3 · Ahead</div>
+  <!-- ============ PHASE: AWS DEPLOYMENT ============ -->
+  <div class="phase-label">Phase 3 · Cloud deployment &amp; live demo</div>
+  <div class="flow">
+
+    <div class="node done">
+      <div class="dot">9</div>
+      <div class="card">
+        <button class="card-head" aria-expanded="false">
+          <div class="card-title">
+            <div class="t">AWS environment built as code</div>
+            <div class="s">Isolated account, Terraform-managed infrastructure, automated deploys</div>
+          </div>
+          <span class="badge done">Complete</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="card-body"><div class="inner"><div class="inner-pad">
+          <h4>What was built</h4>
+          <ul>
+            <li><strong>Dedicated AWS account</strong> for the POC - clean cost and security isolation, with centrally managed admin access for the deployment team.</li>
+            <li>The entire environment is defined in <strong>Terraform</strong>: GPU container hosting (ECS on EC2), private image registry, model store (S3), results database (DynamoDB), and the API key held in Secrets Manager.</li>
+            <li><strong>CI/CD:</strong> every push to the main branch builds the service image and deploys it automatically (GitHub → AWS with short-lived credentials, no stored secrets).</li>
+          </ul>
+          <div class="callout good">Because everything is code, the whole environment can be torn down and rebuilt on demand - and the same modules become the starting point for a production setup later.</div>
+        </div></div></div>
+      </div>
+    </div>
+
+    <div class="node done">
+      <div class="dot">10</div>
+      <div class="card">
+        <button class="card-head" aria-expanded="false">
+          <div class="card-title">
+            <div class="t">Fine-tuned model live on a cloud GPU</div>
+            <div class="s">Two-stage prediction API: category + behavior from a single call</div>
+          </div>
+          <span class="metric-chip">1.7–2.2 s</span>
+          <span class="badge done">Complete</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="card-body"><div class="inner"><div class="inner-pad">
+          <h4>What runs in the cloud</h4>
+          <ul>
+            <li>The validated two-stage pipeline is served as an authenticated <strong>/predict</strong> API: Stage 1 category (fine-tuned adapter) and Stage 2 behavior, each with confidence scores, in one request.</li>
+            <li><strong>1.7–2.2 seconds per screenshot for both stages</strong> on a T4 GPU (g4dn.xlarge) - fast enough that the cheaper GPU tier was locked in, instead of a ~3× more expensive one.</li>
+            <li>Sanity check against a hand-labeled sample: <strong>11/12 correct</strong> on category (loose match).</li>
+            <li>Every prediction is stored in DynamoDB for later review.</li>
+            <li>Model files (~16 GB) load from S3 onto a warm cache, so a redeploy is serving again in about a minute.</li>
+          </ul>
+        </div></div></div>
+      </div>
+    </div>
+
+    <div class="node done">
+      <div class="dot">11</div>
+      <div class="card">
+        <button class="card-head" aria-expanded="false">
+          <div class="card-title">
+            <div class="t">Hosted demo UI</div>
+            <div class="s">Upload a screenshot or paste an image URL, get category + behavior in seconds</div>
+          </div>
+          <span class="badge done">Complete</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="card-body"><div class="inner"><div class="inner-pad">
+          <h4>What reviewers can do</h4>
+          <ul>
+            <li>Web app hosted on AWS Amplify (link shared privately) - upload a screenshot <strong>or paste an image URL</strong> and see the predicted category, behavior and confidence.</li>
+            <li>URL fetching happens server-side with safety guards: public image URLs only, image content only, size-capped.</li>
+            <li><strong>Start/stop the GPU service from the UI</strong>: starting requires a passcode and a chosen session length (45 min / 2 h / 4 h / 8 h); stopping is one click for anyone.</li>
+            <li>A status bar shows whether the service is up, warming, or counting down to auto-off.</li>
+            <li>The inference API key never reaches the browser - all calls are proxied through the server.</li>
+          </ul>
+        </div></div></div>
+      </div>
+    </div>
+
+    <div class="node current">
+      <div class="dot">12</div>
+      <div class="card">
+        <button class="card-head" aria-expanded="false">
+          <div class="card-title">
+            <div class="t">Cost controls &amp; hardening</div>
+            <div class="s">Scale-to-zero already in place; final access and billing guards in progress</div>
+          </div>
+          <span class="badge current">In progress</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="card-body"><div class="inner"><div class="inner-pad">
+          <h4>Done</h4>
+          <ul>
+            <li>GPU service <strong>scales to zero when idle</strong>; a watchdog force-stops it when the session limit expires, even if everyone forgets - including reaping the underlying GPU instance.</li>
+            <li>Running cost: idle ≈ <strong>$3/month</strong>; an active demo session ≈ <strong>$0.55/hour</strong>.</li>
+            <li>Image registry trimmed automatically to the last few builds.</li>
+          </ul>
+          <h4>Remaining</h4>
+          <ul>
+            <li>Password-protect the demo site itself (currently gated only by the start passcode and API key).</li>
+            <li>Billing alarms and a spend circuit breaker on the POC account.</li>
+            <li>Restart/rollback drill to prove recovery from a bad deploy.</li>
+          </ul>
+        </div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PHASE: STAGE 2 ============ -->
+  <div class="phase-label">Phase 4 · Stage 2 &amp; finalization</div>
   <div class="flow">
 
     <div class="node next">
-      <div class="dot">9</div>
+      <div class="dot">13</div>
       <div class="card">
         <button class="card-head" aria-expanded="false">
           <div class="card-title">
@@ -592,19 +705,49 @@
       </div>
     </div>
 
-    <div class="node next">
-      <div class="dot">10</div>
+    <div class="node current">
+      <div class="dot">14</div>
       <div class="card">
         <button class="card-head" aria-expanded="false">
           <div class="card-title">
-            <div class="t">Stage 2: behavior &amp; context assessment</div>
-            <div class="s">Qwen applies agreed rules → Positive / Negative / Neutral / Risk / Uncertain</div>
+            <div class="t">Stage 2: behavior classification - first results</div>
+            <div class="s">Cleaned 920-screenshot dataset, zero-shot Qwen, no fine-tuning</div>
           </div>
-          <span class="badge next">Upcoming</span>
+          <span class="metric-chip">89.78%</span>
+          <span class="badge current">In progress</span>
           <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="card-body"><div class="inner"><div class="inner-pad">
-          <h4>Proposed behavior list - not finalized yet</h4>
+          <h4>Result: 89.78% zero-shot across 9 behavior classes</h4>
+          <p>A hand-built dataset of 920 screenshots was cleaned and run through the Qwen model <strong>without any fine-tuning</strong>. 7 of 9 classes already sit above 93%.</p>
+          <div class="bars">
+            <div class="bar-row"><span class="name">Viewing Firearms / Gun-Related</span><div class="track"><div class="fill" data-w="100.00"></div></div><span class="val">100%</span></div>
+            <div class="bar-row"><span class="name">Navigating</span><div class="track"><div class="fill" data-w="98.72"></div></div><span class="val">98.72%</span></div>
+            <div class="bar-row"><span class="name">Viewing Media</span><div class="track"><div class="fill" data-w="98.08"></div></div><span class="val">98.08%</span></div>
+            <div class="bar-row"><span class="name">Reading</span><div class="track"><div class="fill" data-w="97.62"></div></div><span class="val">97.62%</span></div>
+            <div class="bar-row"><span class="name">Entering or Editing Content</span><div class="track"><div class="fill" data-w="97.32"></div></div><span class="val">97.32%</span></div>
+            <div class="bar-row"><span class="name">Messaging</span><div class="track"><div class="fill" data-w="94.81"></div></div><span class="val">94.81%</span></div>
+            <div class="bar-row"><span class="name">Taking Pictures or Videos</span><div class="track"><div class="fill" data-w="93.75"></div></div><span class="val">93.75%</span></div>
+            <div class="bar-row"><span class="name">Watching School Activities</span><div class="track"><div class="fill warn" data-w="81.88"></div></div><span class="val">81.88%</span></div>
+            <div class="bar-row"><span class="name">Browsing</span><div class="track"><div class="fill warn" data-w="66.67"></div></div><span class="val">66.67%</span></div>
+          </div>
+          <h4>Where the errors concentrate</h4>
+          <div class="scroll-x"><table class="mini">
+            <tr><th>Expected → predicted</th><th style="text-align:right">Count</th></tr>
+            <tr><td>Browsing → Reading</td><td class="num">43</td></tr>
+            <tr><td>Watching School Activities → Viewing Media</td><td class="num">25</td></tr>
+            <tr><td>Messaging → Entering or Editing Content</td><td class="num">4</td></tr>
+            <tr><td>Taking Pictures or Videos → Viewing Media</td><td class="num">4</td></tr>
+          </table></div>
+          <div class="callout good">Same pattern as Stage 1: the two weak spots are adjacent-definition boundaries, not model capability. Scrolling a feed of articles is "Browsing" until you open one ("Reading"), and watching a video of a school event is literally viewing media - both need a crisp rule, like the camera precedence rule below.</div>
+          <h4>Next steps</h4>
+          <ul>
+            <li>Tighten the <strong>Browsing vs Reading</strong> definitions (e.g. list/feed/results visible → Browsing; a single opened item fills the screen → Reading) and re-run.</li>
+            <li>Add a <strong>viewing precedence rule</strong> for Watching School Activities vs Viewing Media, mirroring the existing camera rule.</li>
+            <li>Cross-check with a second, independently built dataset run through the same model.</li>
+            <li>Then layer the assessment step on top: agreed rules → Positive / Negative / Neutral / Risk / Uncertain, with a held-out evaluation split. Fine-tune only if prompting falls short.</li>
+          </ul>
+          <h4>Behavior classes used in the evaluation</h4>
           <div class="scroll-x"><table class="mini">
             <tr><th>Behavior</th><th>What it covers</th></tr>
             <tr><td><strong>Browsing</strong></td><td>Viewing feeds, product lists, profiles, catalogs, recommendations, or search results.</td></tr>
@@ -618,42 +761,12 @@
             <tr><td><strong>Viewing Firearms / Gun-Related Content</strong></td><td>Viewing images, videos, articles, or other content related to firearms or guns.</td></tr>
           </table></div>
           <div class="callout"><strong>Precedence rule:</strong> if the camera is pointed at school, playground, or children's activities, label the screenshot <strong>Watching School Activities</strong>; generic camera use is <strong>Taking Pictures or Videos</strong>. This keeps labelers and the model making the same call where the two behaviors overlap.</div>
-          <h4>Approach</h4>
-          <ul>
-            <li>Agree the behavior definitions and assessment rules (e.g. educational work → Positive; threatening messages → Negative).</li>
-            <li>Build a 200-300 screenshot hand-labeled evaluation set: filename, category, behavior, evidence, expected assessment.</li>
-            <li>Split 60% prompt development / 40% held-out final evaluation, grouped by scenario.</li>
-            <li>Pretrained Qwen with prompt engineering first; fine-tuning only if needed.</li>
-            <li>Include hard cases: quoted threats, ambiguous content, low-text screenshots, to measure false positives and correct "Uncertain" outputs.</li>
-          </ul>
-        </div></div></div>
-      </div>
-    </div>
-
-    <div class="node next">
-      <div class="dot">11</div>
-      <div class="card">
-        <button class="card-head" aria-expanded="false">
-          <div class="card-title">
-            <div class="t">AWS hosting, API &amp; POC frontend</div>
-            <div class="s">Deploy models on GPU, authenticated inference API, upload &amp; results UI</div>
-          </div>
-          <span class="badge next">Upcoming</span>
-          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="card-body"><div class="inner"><div class="inner-pad">
-          <ul>
-            <li>Package and deploy the fine-tuned Qwen model with GPU resources on AWS.</li>
-            <li>Authenticated inference API; local benchmark of ~1 image/sec (4-bit, batch 1) sets the sizing baseline.</li>
-            <li>Frontend: screenshot upload, preview, processing status, results view.</li>
-            <li>End-to-end integration test and deployment documentation.</li>
-          </ul>
         </div></div></div>
       </div>
     </div>
   </div>
 
-  <footer>Screenshot Analysis POC · progress as of 28 Sep 2026 · Stage 1 classification on track, Stage 2 assessment next</footer>
+  <footer>Screenshot Analysis POC · progress as of 3 Nov 2026 · Stage 1 live on AWS · Stage 2 behavior classification at 89.78% zero-shot</footer>
 </div>
 
 <script>
