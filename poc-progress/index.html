@@ -171,6 +171,14 @@
     background: rgba(251,191,36,.07); border: 1px solid rgba(251,191,36,.25); color: #f2d9a0;
   }
   .callout.good { background: rgba(52,211,153,.07); border-color: rgba(52,211,153,.25); color: #b7ecd7; }
+  .doc-link {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 8px;
+    padding: 8px 14px; border-radius: 10px; font-size: 13.5px; font-weight: 700;
+    color: var(--accent); background: rgba(109,141,255,.1);
+    border: 1px solid rgba(109,141,255,.4); text-decoration: none;
+    transition: border-color .18s ease, background .18s ease;
+  }
+  .doc-link:hover { border-color: var(--accent); background: rgba(109,141,255,.16); }
 
   /* bars */
   .bars { margin-top: 10px; display: grid; gap: 7px; }
@@ -528,117 +536,12 @@
 
   </div>
 
-  <!-- ============ PHASE: AWS DEPLOYMENT ============ -->
-  <div class="phase-label">Phase 3 · Cloud deployment &amp; live demo</div>
-  <div class="flow">
-
-    <div class="node done">
-      <div class="dot">7</div>
-      <div class="card">
-        <button class="card-head" aria-expanded="false">
-          <div class="card-title">
-            <div class="t">AWS environment built as code</div>
-            <div class="s">Isolated account, Terraform-managed infrastructure, automated deploys</div>
-          </div>
-          <span class="badge done">Complete</span>
-          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="card-body"><div class="inner"><div class="inner-pad">
-          <h4>What was built</h4>
-          <ul>
-            <li><strong>Dedicated AWS account</strong> for the POC - clean cost and security isolation, with centrally managed admin access for the deployment team.</li>
-            <li>The entire environment is defined in <strong>Terraform</strong>: GPU container hosting (ECS on EC2), private image registry, model store (S3), results database (DynamoDB), and the API key held in Secrets Manager.</li>
-            <li><strong>CI/CD:</strong> every push to the main branch builds the service image and deploys it automatically (GitHub → AWS with short-lived credentials, no stored secrets).</li>
-          </ul>
-          <div class="callout good">Because everything is code, the whole environment can be torn down and rebuilt on demand - and the same modules become the starting point for a production setup later.</div>
-        </div></div></div>
-      </div>
-    </div>
-
-    <div class="node done">
-      <div class="dot">8</div>
-      <div class="card">
-        <button class="card-head" aria-expanded="false">
-          <div class="card-title">
-            <div class="t">Fine-tuned model live on a cloud GPU</div>
-            <div class="s">Two-stage prediction API: category + behavior from a single call</div>
-          </div>
-          <span class="metric-chip">1.7–2.2 s</span>
-          <span class="badge done">Complete</span>
-          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="card-body"><div class="inner"><div class="inner-pad">
-          <h4>What runs in the cloud</h4>
-          <ul>
-            <li>The validated two-stage pipeline is served as an authenticated <strong>/predict</strong> API: Stage 1 category (fine-tuned adapter) and Stage 2 behavior, each with confidence scores, in one request.</li>
-            <li><strong>1.7–2.2 seconds per screenshot for both stages</strong> on a T4 GPU (g4dn.xlarge) - fast enough that the cheaper GPU tier was locked in, instead of a ~3× more expensive one.</li>
-            <li>Sanity check against a hand-labeled sample: <strong>11/12 correct</strong> on category (loose match).</li>
-            <li>Every prediction is stored in DynamoDB for later review.</li>
-            <li>Model files (~16 GB) load from S3 onto a warm cache, so a redeploy is serving again in about a minute.</li>
-          </ul>
-        </div></div></div>
-      </div>
-    </div>
-
-    <div class="node done">
-      <div class="dot">9</div>
-      <div class="card">
-        <button class="card-head" aria-expanded="false">
-          <div class="card-title">
-            <div class="t">Hosted demo UI</div>
-            <div class="s">Upload a screenshot or paste an image URL, get category + behavior in seconds</div>
-          </div>
-          <span class="badge done">Complete</span>
-          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="card-body"><div class="inner"><div class="inner-pad">
-          <h4>What reviewers can do</h4>
-          <ul>
-            <li>Web app hosted on AWS Amplify (link shared privately) - upload a screenshot <strong>or paste an image URL</strong> and see the predicted category, behavior and confidence.</li>
-            <li>URL fetching happens server-side with safety guards: public image URLs only, image content only, size-capped.</li>
-            <li><strong>Start/stop the GPU service from the UI</strong>: starting requires a passcode and a chosen session length (45 min / 2 h / 4 h / 8 h); stopping is one click for anyone.</li>
-            <li>A status bar shows whether the service is up, warming, or counting down to auto-off.</li>
-            <li>The inference API key never reaches the browser - all calls are proxied through the server.</li>
-          </ul>
-        </div></div></div>
-      </div>
-    </div>
-
-    <div class="node current">
-      <div class="dot">10</div>
-      <div class="card">
-        <button class="card-head" aria-expanded="false">
-          <div class="card-title">
-            <div class="t">Cost controls &amp; hardening</div>
-            <div class="s">Scale-to-zero already in place; final access and billing guards in progress</div>
-          </div>
-          <span class="badge current">In progress</span>
-          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="card-body"><div class="inner"><div class="inner-pad">
-          <h4>Done</h4>
-          <ul>
-            <li>GPU service <strong>scales to zero when idle</strong>; a watchdog force-stops it when the session limit expires, even if everyone forgets - including reaping the underlying GPU instance.</li>
-            <li>Running cost: idle ≈ <strong>$3/month</strong>; an active demo session ≈ <strong>$0.55/hour</strong>.</li>
-            <li>Image registry trimmed automatically to the last few builds.</li>
-          </ul>
-          <h4>Remaining</h4>
-          <ul>
-            <li>Password-protect the demo site itself (currently gated only by the start passcode and API key).</li>
-            <li>Billing alarms and a spend circuit breaker on the POC account.</li>
-            <li>Restart/rollback drill to prove recovery from a bad deploy.</li>
-          </ul>
-        </div></div></div>
-      </div>
-    </div>
-  </div>
-
   <!-- ============ PHASE: STAGE 2 ============ -->
-  <div class="phase-label">Phase 4 · Stage 2 &amp; finalization</div>
+  <div class="phase-label">Phase 3 · Stage 2 &amp; finalization</div>
   <div class="flow">
 
     <div class="node next">
-      <div class="dot">11</div>
+      <div class="dot">7</div>
       <div class="card">
         <button class="card-head" aria-expanded="false">
           <div class="card-title">
@@ -655,7 +558,7 @@
     </div>
 
     <div class="node current">
-      <div class="dot">12</div>
+      <div class="dot">8</div>
       <div class="card">
         <button class="card-head" aria-expanded="false">
           <div class="card-title">
@@ -710,6 +613,101 @@
             <tr><td><strong>Viewing Firearms / Gun-Related Content</strong></td><td>Viewing images, videos, articles, or other content related to firearms or guns.</td></tr>
           </table></div>
           <div class="callout"><strong>Precedence rule:</strong> if the camera is pointed at school, playground, or children's activities, label the screenshot <strong>Watching School Activities</strong>; generic camera use is <strong>Taking Pictures or Videos</strong>. This keeps labelers and the model making the same call where the two behaviors overlap.</div>
+        </div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PHASE: AWS DEPLOYMENT ============ -->
+  <div class="phase-label">Phase 4 · Cloud deployment &amp; live demo</div>
+  <div class="flow">
+
+    <div class="node done">
+      <div class="dot">9</div>
+      <div class="card">
+        <button class="card-head" aria-expanded="false">
+          <div class="card-title">
+            <div class="t">AWS environment built as code</div>
+            <div class="s">Isolated account, Terraform-managed infrastructure, automated deploys</div>
+          </div>
+          <span class="badge done">Complete</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="card-body"><div class="inner"><div class="inner-pad">
+          <h4>What was built</h4>
+          <ul>
+            <li><strong>Dedicated AWS account</strong> for the POC - clean cost and security isolation, with centrally managed admin access for the deployment team.</li>
+            <li>The entire environment is defined in <strong>Terraform</strong>: GPU container hosting (ECS on EC2), private image registry, model store (S3), results database (DynamoDB), and the API key held in Secrets Manager.</li>
+            <li><strong>CI/CD:</strong> every push to the main branch builds the service image and deploys it automatically (GitHub → AWS with short-lived credentials, no stored secrets).</li>
+          </ul>
+          <div class="callout good">Because everything is code, the whole environment can be torn down and rebuilt on demand - and the same modules become the starting point for a production setup later.</div>
+        </div></div></div>
+      </div>
+    </div>
+
+    <div class="node done">
+      <div class="dot">10</div>
+      <div class="card">
+        <button class="card-head" aria-expanded="false">
+          <div class="card-title">
+            <div class="t">Fine-tuned model live on a cloud GPU</div>
+            <div class="s">Two-stage prediction API: category + behavior from a single call</div>
+          </div>
+          <span class="metric-chip">1.7–2.2 s</span>
+          <span class="badge done">Complete</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="card-body"><div class="inner"><div class="inner-pad">
+          <h4>What runs in the cloud</h4>
+          <ul>
+            <li>The validated two-stage pipeline is served as an authenticated <strong>/predict</strong> API: Stage 1 category (fine-tuned adapter) and Stage 2 behavior, each with confidence scores, in one request.</li>
+            <li><strong>1.7–2.2 seconds per screenshot for both stages</strong> on a T4 GPU (g4dn.xlarge) - fast enough that the cheaper GPU tier was locked in, instead of a ~3× more expensive one.</li>
+            <li>Sanity check against a hand-labeled sample: <strong>11/12 correct</strong> on category (loose match).</li>
+            <li>Every prediction is stored in DynamoDB for later review.</li>
+            <li>Model files (~16 GB) load from S3 onto a warm cache, so a redeploy is serving again in about a minute.</li>
+          </ul>
+        </div></div></div>
+      </div>
+    </div>
+
+    <div class="node done">
+      <div class="dot">11</div>
+      <div class="card">
+        <button class="card-head" aria-expanded="false">
+          <div class="card-title">
+            <div class="t">Hosted demo UI</div>
+            <div class="s">Upload a screenshot or paste an image URL, get category + behavior in seconds</div>
+          </div>
+          <span class="badge done">Complete</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="card-body"><div class="inner"><div class="inner-pad">
+          <h4>What reviewers can do</h4>
+          <ul>
+            <li>Web app hosted on AWS Amplify (link shared privately) - upload a screenshot <strong>or paste an image URL</strong> and see the predicted category, behavior and confidence.</li>
+            <li>URL fetching happens server-side with safety guards: public image URLs only, image content only, size-capped.</li>
+            <li><strong>Start/stop the GPU service from the UI</strong>: starting requires a passcode and a chosen session length (45 min / 2 h / 4 h / 8 h); stopping is one click for anyone.</li>
+            <li>A status bar shows whether the service is up, warming, or counting down to auto-off.</li>
+            <li>The inference API key never reaches the browser - all calls are proxied through the server.</li>
+          </ul>
+        </div></div></div>
+      </div>
+    </div>
+
+    <div class="node done">
+      <div class="dot">12</div>
+      <div class="card">
+        <button class="card-head" aria-expanded="false">
+          <div class="card-title">
+            <div class="t">Solution access guide</div>
+            <div class="s">Step-by-step guide to open the demo, start the service and run predictions</div>
+          </div>
+          <span class="badge done">Complete</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="card-body"><div class="inner"><div class="inner-pad">
+          <p>A short guide for reviewers covering how to reach the demo UI, start the GPU service with a chosen session length, upload a screenshot or paste an image URL, read the prediction results, and stop the service when finished.</p>
+          <a class="doc-link" href="https://docs.google.com/document/d/1SnqGiePXgsdSm2miSqW32ZztENOISGXt/edit?usp=sharing&amp;ouid=117325898418318468286&amp;rtpof=true&amp;sd=true" target="_blank" rel="noopener">Open the solution access guide (Word document)</a>
         </div></div></div>
       </div>
     </div>
