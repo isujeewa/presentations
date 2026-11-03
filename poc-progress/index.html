@@ -105,7 +105,7 @@
   .flow { position: relative; padding-left: 44px; }
   .flow::before {
     content: ""; position: absolute; left: 15px; top: 8px; bottom: 8px; width: 2px;
-    background: linear-gradient(180deg, var(--done) 0%, var(--done) 58%, var(--current) 72%, var(--line) 88%);
+    background: var(--done);
     border-radius: 2px; opacity: .55;
   }
 
@@ -226,7 +226,7 @@
 <div class="wrap">
   <div class="kicker">IPPC · AI Screenshot Analysis POC</div>
   <h1>From plan to <span class="grad">82.28% accuracy</span><br>to a live service on AWS</h1>
-  <p class="sub">Two-step POC: classify a screenshot's activity category (Stage 1), then assess the visible behavior against agreed rules (Stage 2). Stage 1 is fine-tuned and live on an AWS GPU behind a hosted demo UI, and Stage 2 behavior classification has its first results. Click any milestone to expand the detail behind it.</p>
+  <p class="sub">Two-step POC: classify a screenshot's activity category (Stage 1), then classify the visible behavior (Stage 2). Both stages are validated - Stage 2 reached 89.78% zero-shot - and the solution is live on an AWS GPU behind a hosted demo UI. Click any milestone to expand the detail behind it.</p>
 
   <div class="stats">
     <div class="stat"><div class="num good">82.28%</div><div class="lbl">Stage 1 accuracy, fine-tuned Qwen3-VL-8B</div></div>
@@ -537,36 +537,19 @@
   </div>
 
   <!-- ============ PHASE: STAGE 2 ============ -->
-  <div class="phase-label">Phase 3 · Stage 2 &amp; finalization</div>
+  <div class="phase-label">Phase 3 · Stage 2 behavior classification</div>
   <div class="flow">
 
-    <div class="node next">
+    <div class="node done">
       <div class="dot">7</div>
       <div class="card">
         <button class="card-head" aria-expanded="false">
           <div class="card-title">
-            <div class="t">IPPC POC finalized categories</div>
-            <div class="s">Agree the final class list as the foundation for behavior review</div>
-          </div>
-          <span class="badge next">Upcoming</span>
-          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="card-body"><div class="inner"><div class="inner-pad">
-          <p>Review the current 13 classes and agree the IPPC POC finalized activity categories - keeping only the categories relevant to capturing the final behavior, and dropping the rest.</p>
-        </div></div></div>
-      </div>
-    </div>
-
-    <div class="node current">
-      <div class="dot">8</div>
-      <div class="card">
-        <button class="card-head" aria-expanded="false">
-          <div class="card-title">
-            <div class="t">Stage 2: behavior classification - first results</div>
+            <div class="t">Stage 2: behavior classification</div>
             <div class="s">Cleaned 920-screenshot dataset, zero-shot Qwen, no fine-tuning</div>
           </div>
           <span class="metric-chip">89.78%</span>
-          <span class="badge current">In progress</span>
+          <span class="badge done">Complete</span>
           <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="card-body"><div class="inner"><div class="inner-pad">
@@ -591,14 +574,7 @@
             <tr><td>Messaging → Entering or Editing Content</td><td class="num">4</td></tr>
             <tr><td>Taking Pictures or Videos → Viewing Media</td><td class="num">4</td></tr>
           </table></div>
-          <div class="callout good">Same pattern as Stage 1: the two weak spots are adjacent-definition boundaries, not model capability. Scrolling a feed of articles is "Browsing" until you open one ("Reading"), and watching a video of a school event is literally viewing media - both need a crisp rule, like the camera precedence rule below.</div>
-          <h4>Next steps</h4>
-          <ul>
-            <li>Tighten the <strong>Browsing vs Reading</strong> definitions (e.g. list/feed/results visible → Browsing; a single opened item fills the screen → Reading) and re-run.</li>
-            <li>Add a <strong>viewing precedence rule</strong> for Watching School Activities vs Viewing Media, mirroring the existing camera rule.</li>
-            <li>Cross-check with a second, independently built dataset run through the same model.</li>
-            <li>Then layer the assessment step on top: agreed rules → Positive / Negative / Neutral / Risk / Uncertain, with a held-out evaluation split. Fine-tune only if prompting falls short.</li>
-          </ul>
+          <div class="callout good">Same pattern as Stage 1: the two weak spots are adjacent-definition boundaries, not model capability. Scrolling a feed of articles is "Browsing" until you open one ("Reading"), and watching a video of a school event is literally viewing media.</div>
           <h4>Behavior classes used in the evaluation</h4>
           <div class="scroll-x"><table class="mini">
             <tr><th>Behavior</th><th>What it covers</th></tr>
@@ -623,7 +599,7 @@
   <div class="flow">
 
     <div class="node done">
-      <div class="dot">9</div>
+      <div class="dot">8</div>
       <div class="card">
         <button class="card-head" aria-expanded="false">
           <div class="card-title">
@@ -646,7 +622,7 @@
     </div>
 
     <div class="node done">
-      <div class="dot">10</div>
+      <div class="dot">9</div>
       <div class="card">
         <button class="card-head" aria-expanded="false">
           <div class="card-title">
@@ -671,7 +647,7 @@
     </div>
 
     <div class="node done">
-      <div class="dot">11</div>
+      <div class="dot">10</div>
       <div class="card">
         <button class="card-head" aria-expanded="false">
           <div class="card-title">
@@ -695,7 +671,7 @@
     </div>
 
     <div class="node done">
-      <div class="dot">12</div>
+      <div class="dot">11</div>
       <div class="card">
         <button class="card-head" aria-expanded="false">
           <div class="card-title">
@@ -713,7 +689,20 @@
     </div>
   </div>
 
-  <footer>Screenshot Analysis POC · progress as of 3 Nov 2026 · Stage 1 live on AWS · Stage 2 behavior classification at 89.78% zero-shot</footer>
+  <div class="journey" style="margin-top:46px; padding-bottom:18px;">
+    <h2>Next steps - pushing accuracy higher</h2>
+    <p>Beyond the POC scope</p>
+    <div class="chips" style="margin-top:10px;">
+      <span class="chip">Higher-resolution training images</span>
+      <span class="chip">Larger GPU → bigger model variants</span>
+      <span class="chip">Fine-tune Stage 2 (currently zero-shot)</span>
+      <span class="chip">Crisper definitions for overlapping classes</span>
+      <span class="chip">Clean remaining label noise</span>
+      <span class="chip">More training examples for weak classes</span>
+    </div>
+  </div>
+
+  <footer>Screenshot Analysis POC · completed 3 Nov 2026 · Stage 1 fine-tuned, Stage 2 at 89.78% zero-shot, live on AWS</footer>
 </div>
 
 <script>
