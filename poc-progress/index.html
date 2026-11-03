@@ -526,57 +526,6 @@
       </div>
     </div>
 
-    <div class="node current">
-      <div class="dot">7</div>
-      <div class="card">
-        <button class="card-head" aria-expanded="false">
-          <div class="card-title">
-            <div class="t">Streaming class review</div>
-            <div class="s">Weakest class at 45% - definition overlaps with neighboring classes</div>
-          </div>
-          <span class="metric-chip">45.00%</span>
-          <span class="badge current">In progress</span>
-          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="card-body"><div class="inner"><div class="inner-pad">
-          <h4>The problem</h4>
-          <p>Streaming (45%) overlaps heavily with Video Players &amp; Editors and Social - it is a definition problem, not a data-volume problem. A streaming app's playback screen looks identical to a local video player, and live-stream chat looks like a social feed, so the class boundary is unclear at screen-content level.</p>
-          <h4>Options on the table</h4>
-          <ul>
-            <li><strong>A fourth merge</strong> - fold Streaming into Video Players &amp; Editors the same way the earlier overlapping pairs were combined.</li>
-            <li><strong>A crisp content-level rule</strong> - keep the class but define exactly what qualifies (e.g. streaming-service UI or live broadcast visible on screen), then add matching training examples.</li>
-          </ul>
-        </div></div></div>
-      </div>
-    </div>
-
-    <div class="node current">
-      <div class="dot">8</div>
-      <div class="card">
-        <button class="card-head" aria-expanded="false">
-          <div class="card-title">
-            <div class="t">Validation &amp; data quality round</div>
-            <div class="s">Making sure 82.28% is real, then pushing it higher</div>
-          </div>
-          <span class="badge current">In progress</span>
-          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="card-body"><div class="inner"><div class="inner-pad">
-          <h4>Verify first</h4>
-          <ul>
-            <li><strong>Confirm the train/test split is grouped by app.</strong> If the same app appears in both, the model can memorize app identity and the score is inflated.</li>
-            <li><strong>Clean labels before more training.</strong> Fine-tuning on noisy app-level labels bakes the noise in; review the images where the base model disagrees with the folder label.</li>
-          </ul>
-          <h4>Then improve</h4>
-          <ul>
-            <li>Increase input image resolution - screenshots are text-dense, and resolution is likely a bigger lever than a larger model.</li>
-            <li>Balance training data across classes; add examples for weak classes.</li>
-            <li>Add an "Other / generic screen" class for logins, settings and feedback forms.</li>
-            <li>Larger GPU to unlock higher resolution and bigger model variants.</li>
-          </ul>
-        </div></div></div>
-      </div>
-    </div>
   </div>
 
   <!-- ============ PHASE: AWS DEPLOYMENT ============ -->
@@ -584,7 +533,7 @@
   <div class="flow">
 
     <div class="node done">
-      <div class="dot">9</div>
+      <div class="dot">7</div>
       <div class="card">
         <button class="card-head" aria-expanded="false">
           <div class="card-title">
@@ -607,7 +556,7 @@
     </div>
 
     <div class="node done">
-      <div class="dot">10</div>
+      <div class="dot">8</div>
       <div class="card">
         <button class="card-head" aria-expanded="false">
           <div class="card-title">
@@ -632,7 +581,7 @@
     </div>
 
     <div class="node done">
-      <div class="dot">11</div>
+      <div class="dot">9</div>
       <div class="card">
         <button class="card-head" aria-expanded="false">
           <div class="card-title">
@@ -656,7 +605,7 @@
     </div>
 
     <div class="node current">
-      <div class="dot">12</div>
+      <div class="dot">10</div>
       <div class="card">
         <button class="card-head" aria-expanded="false">
           <div class="card-title">
@@ -689,7 +638,7 @@
   <div class="flow">
 
     <div class="node next">
-      <div class="dot">13</div>
+      <div class="dot">11</div>
       <div class="card">
         <button class="card-head" aria-expanded="false">
           <div class="card-title">
@@ -706,7 +655,7 @@
     </div>
 
     <div class="node current">
-      <div class="dot">14</div>
+      <div class="dot">12</div>
       <div class="card">
         <button class="card-head" aria-expanded="false">
           <div class="card-title">
