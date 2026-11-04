@@ -215,6 +215,10 @@
     .cat-arrow svg { transform: rotate(90deg); }
   }
 
+  /* supports-today */
+  .support-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 48px; }
+  @media (max-width: 620px) { .support-grid { grid-template-columns: 1fr; } }
+
   footer { margin-top: 46px; color: var(--muted); font-size: 12.5px; text-align: center; }
 
   @media (max-width: 620px) {
@@ -233,7 +237,7 @@
     <div class="stat"><div class="num accent">+9.92 pp</div><div class="lbl">Gain from QLoRA fine-tuning (2 epochs)</div></div>
     <div class="stat"><div class="num">13</div><div class="lbl">Activity classes (merged from 16)</div></div>
     <div class="stat"><div class="num">2,337</div><div class="lbl">Test screenshots evaluated</div></div>
-    <div class="stat"><div class="num accent">1.7–2.2 s</div><div class="lbl">Per screenshot, both stages, on AWS GPU</div></div>
+    <div class="stat"><div class="num accent">1.7–2.2 s</div><div class="lbl">Per screenshot, both stages, on the POC's T4 GPU (g4dn.xlarge) - production A10G benchmark to follow</div></div>
     <div class="stat"><div class="num good">89.78%</div><div class="lbl">Stage 2 behavior accuracy, zero-shot, 920 screenshots</div></div>
   </div>
 
@@ -303,6 +307,12 @@
     </div>
     <div class="ch-card">
       <div class="ch-tag">Challenge</div>
+      <p>Some screenshots are ambiguous <strong>even to the human eye</strong> - a streaming playback screen looks like a local video player, and scrolling a feed of articles vs reading one is a judgment call. Two reviewers can honestly label the same screen differently, and no model can beat that ceiling.</p>
+      <div class="ch-tag solved">What we did</div>
+      <p>Defined agreed <strong>screen-level rules and precedence</strong> (e.g. camera pointed at school activities → Watching School Activities, not generic camera use) so human labelers and the model make the same call - and merged classes where no rule could separate them.</p>
+    </div>
+    <div class="ch-card">
+      <div class="ch-tag">Challenge</div>
       <p>Limited local GPU memory constrained training - fine-tuning needed 4-bit quantization and reduced image resolution, and 2 epochs took ~1.5 days.</p>
       <div class="ch-tag solved">What we did</div>
       <p>We used a smart, memory-saving technique (QLoRA) to customize the AI model using limited computer power. Even with those hardware limits, we improved the model's accuracy score by <strong>9.92 percentage points</strong>, boosting it up to <strong>82.28%</strong>.</p>
@@ -310,9 +320,48 @@
     </div>
     <div class="ch-card">
       <div class="ch-tag">Challenge</div>
-      <p>A GPU model left running in the cloud costs hundreds of dollars a month even when nobody is using it - far too heavy for a POC budget.</p>
+      <p>The available training data was too small and too noisily labeled to fine-tune on as-is - training on more of the same would just bake the label noise into the model.</p>
       <div class="ch-tag solved">What we did</div>
-      <p>Right-sized to a cheaper T4 GPU after first proving the model runs fast enough on it, and made the service <strong>scale to zero</strong>: a watchdog powers it off automatically after every session. Idle cost is now roughly <strong>$3/month</strong>, and a full demo session costs well under a dollar.</p>
+      <p>Built a smaller but <strong>accurately hand-picked, hand-labeled dataset</strong> and fine-tuned Qwen3-VL-8B on it with QLoRA - data quality over data quantity, feeding directly into the <strong>82.28%</strong> result.</p>
+    </div>
+  </div>
+
+  <div class="ch-head">
+    <h2>What the model supports today</h2>
+    <p>Every screenshot gets one activity category (Stage 1) and one behavior (Stage 2), each with a confidence score</p>
+  </div>
+  <div class="support-grid">
+    <div class="cat-col">
+      <h5>Stage 1 · Activity categories · <span class="count">13</span></h5>
+      <div class="chips">
+        <span class="chip">Social</span>
+        <span class="chip">Shopping</span>
+        <span class="chip">Education</span>
+        <span class="chip">Medical</span>
+        <span class="chip">Travel &amp; Local</span>
+        <span class="chip">Streaming</span>
+        <span class="chip">News &amp; Magazines</span>
+        <span class="chip">Finance</span>
+        <span class="chip">Food &amp; Drink</span>
+        <span class="chip">Sports</span>
+        <span class="chip">Weather</span>
+        <span class="chip">Video Players &amp; Editors</span>
+        <span class="chip">Dating</span>
+      </div>
+    </div>
+    <div class="cat-col">
+      <h5>Stage 2 · Behaviors · <span class="count">9</span></h5>
+      <div class="chips">
+        <span class="chip">Browsing</span>
+        <span class="chip">Messaging</span>
+        <span class="chip">Reading</span>
+        <span class="chip">Viewing Media</span>
+        <span class="chip">Entering or Editing Content</span>
+        <span class="chip">Navigating</span>
+        <span class="chip">Watching School Activities</span>
+        <span class="chip">Taking Pictures or Videos</span>
+        <span class="chip">Viewing Firearms / Gun-Related Content</span>
+      </div>
     </div>
   </div>
 
@@ -355,7 +404,7 @@
       <div class="card">
         <button class="card-head" aria-expanded="false">
           <div class="card-title">
-            <div class="t">Categories defined from RICO</div>
+            <div class="t">Categories defined from the RICO dataset</div>
             <div class="s">10 initial classes, extensible to 20; behaviors drafted for Stage 2</div>
           </div>
           <span class="badge done">Complete</span>
@@ -366,7 +415,7 @@
           <p>Communication, Social, Shopping, Education, Entertainment, Music &amp; Audio, News &amp; Magazines, Finance, Health &amp; Fitness, Travel &amp; Local, plus extensions (Books &amp; Reference, Maps &amp; Navigation, Food &amp; Drink, Sports, Weather, Medical, Video Players &amp; Editors, Dating, Streaming).</p>
           <h4>Stage 2 behaviors (draft)</h4>
           <p>Browsing · Messaging · Reading · Viewing media · Entering or editing content.</p>
-          <div class="callout">Known caveat from day one: RICO labels are app-store categories, so every screenshot inherits its app's label regardless of what is actually on screen. This shaped everything that followed.</div>
+          <div class="callout">Known caveat from day one: the RICO dataset's labels are app-store categories, so every screenshot inherits its app's label regardless of what is actually on screen. This shaped everything that followed.</div>
         </div></div></div>
       </div>
     </div>
@@ -694,7 +743,7 @@
     <p>Beyond the POC scope</p>
     <div class="chips" style="margin-top:10px;">
       <span class="chip">Higher-resolution training images</span>
-      <span class="chip">Larger GPU → bigger model variants</span>
+      <span class="chip">Production: larger GPU (A10G / g5 class)</span>
       <span class="chip">Fine-tune Stage 2 (currently zero-shot)</span>
       <span class="chip">Crisper definitions for overlapping classes</span>
       <span class="chip">Clean remaining label noise</span>
